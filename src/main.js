@@ -12,7 +12,7 @@ let query;
 let page = 1;
 let countOPictures;
 
-const BASE_URL = 'https://pixabay.com/api';
+const BASE_URL = 'https://pixabay.com/api/';
 
 const statusOfElement = {
   on: 'on',
