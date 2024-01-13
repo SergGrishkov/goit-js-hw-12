@@ -8,9 +8,11 @@ const formEl = document.querySelector('.form');
 const gallery = document.querySelector('.gallery');
 const loaderEl = document.querySelector('body>span');
 const btnLoadMoreEl = document.querySelector('.buttonLoadMore');
+
 let query;
 let page = 1;
 let countOPictures;
+let top;
 
 const BASE_URL = 'https://pixabay.com/api/';
 
@@ -65,6 +67,9 @@ async function onSubmit(e) {
       gallery.innerHTML = renderPictures(hits);
       galleryImg.refresh();
       loaderDisplayStatus(statusOfElement.off);
+      let firstImageEl = document.querySelector('.gallery-item:first-child');
+      console.log(firstImageEl.getBoundingClientRect());
+      top = firstImageEl.getBoundingClientRect().top;
     } else {
       iziToast.error({
         position: 'topRight',
@@ -104,6 +109,10 @@ async function loadMore(e) {
     gallery.insertAdjacentHTML('beforeend', renderPictures(hits));
     galleryImg.refresh();
     loaderDisplayStatus(statusOfElement.off);
+    window.scrollBy({
+      top: top * 4,
+      behavior: 'smooth',
+    });
     hasMorePictures(totalPages);
   } catch (error) {
     console.log(error);
