@@ -11,7 +11,7 @@ const btnLoadMoreEl = document.querySelector('.buttonLoadMore');
 
 let query;
 let page = 1;
-let countOPictures;
+let per_page = 40;
 let top;
 
 const BASE_URL = 'https://pixabay.com/api/';
@@ -42,7 +42,7 @@ function getPicture(query, page) {
     orientation: 'horizontal',
     safesearch: true,
     page,
-    per_page: 40,
+    per_page,
   };
 
   return axios.get(BASE_URL, { params });
@@ -50,27 +50,35 @@ function getPicture(query, page) {
 
 async function onSubmit(e) {
   e.preventDefault();
-  gallery.innerHTML = '';
-  loaderDisplayStatus(statusOfElement.on);
   query = e.target.elements.search.value.trim();
+  page = 1;
+
+  if (!query) {
+    gallery.innerHTML = '';
+    displayButtonLoadMore(statusOfElement.off);
+    return iziToast.info({
+      position: 'topRight',
+      message: 'Input search text',
+    });
+  }
+
+  loaderDisplayStatus(statusOfElement.on);
 
   try {
     const {
-      data: { hits, total, totalHits },
+      data: { hits },
     } = await getPicture(query, page);
-    // countOPictures = total;
-    // let totalPages = Math.ceil((countOPictures - 40) / totalHits);
-    // console.log(totalPages);
-    // console.log(total, totalHits);
+
     if (hits.length > 0) {
-      loaderDisplayStatus();
+      hasMorePictures(hits);
+      loaderDisplayStatus(statusOfElement.on);
       gallery.innerHTML = renderPictures(hits);
       galleryImg.refresh();
       loaderDisplayStatus(statusOfElement.off);
-      let firstImageEl = document.querySelector('.gallery-item:first-child');
-      console.log(firstImageEl.getBoundingClientRect());
+      const firstImageEl = document.querySelector('.gallery-item:first-child');
       top = firstImageEl.getBoundingClientRect().top;
     } else {
+      gallery.innerHTML = '';
       iziToast.error({
         position: 'topRight',
         message:
@@ -79,12 +87,6 @@ async function onSubmit(e) {
       loaderDisplayStatus(statusOfElement.off);
       displayButtonLoadMore(statusOfElement.off);
       return;
-    }
-
-    if (Math.ceil(total / totalHits) > page) {
-      displayButtonLoadMore(statusOfElement.on);
-    } else {
-      displayButtonLoadMore(statusOfElement.off);
     }
   } catch (error) {
     console.log(error);
@@ -100,12 +102,8 @@ async function loadMore(e) {
 
   try {
     const {
-      data: { hits, total, totalHits },
+      data: { hits },
     } = await getPicture(query, page);
-    // countOPictures = total;
-    // let totalPages = Math.ceil((countOPictures - 40) / totalHits);
-    // console.log(totalPages);
-    // console.log(total, totalHits);
     gallery.insertAdjacentHTML('beforeend', renderPictures(hits));
     galleryImg.refresh();
     loaderDisplayStatus(statusOfElement.off);
@@ -113,7 +111,7 @@ async function loadMore(e) {
       top: top * 4,
       behavior: 'smooth',
     });
-    hasMorePictures(totalPages);
+    hasMorePictures(hits);
   } catch (error) {
     console.log(error);
   }
@@ -164,11 +162,14 @@ function loaderDisplayStatus(status) {
   }
 }
 
-function hasMorePictures(totalPages) {
-  if (page === totalPages) {
+function hasMorePictures(arrImages) {
+  if (arrImages.length < per_page) {
+    displayButtonLoadMore(statusOfElement.off);
     iziToast.info({
       position: 'topRight',
       message: `We're sorry, but you've reached the end of search results.`,
     });
+  } else {
+    displayButtonLoadMore(statusOfElement.on);
   }
 }
