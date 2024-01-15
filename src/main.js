@@ -6,13 +6,15 @@ import 'izitoast/dist/css/iziToast.min.css';
 
 const formEl = document.querySelector('.form');
 const gallery = document.querySelector('.gallery');
-const loaderEl = document.querySelector('body>span');
+const loaderUpEl = document.querySelector('.loader-up');
+const loaderDownEl = document.querySelector('.loader-down');
 const btnLoadMoreEl = document.querySelector('.buttonLoadMore');
 
 let query;
 let page = 1;
 let per_page = 40;
 let top;
+let countPage;
 
 const BASE_URL = 'https://pixabay.com/api/';
 
@@ -31,7 +33,8 @@ const galleryImg = new SimpleLightbox('.gallery a', {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
-  loaderDisplayStatus(statusOfElement.off);
+  loaderDisplay(loaderUpEl, statusOfElement.off);
+  loaderDisplay(loaderDownEl, statusOfElement.off);
 });
 
 function getPicture(query, page) {
@@ -62,19 +65,15 @@ async function onSubmit(e) {
     });
   }
 
-  loaderDisplayStatus(statusOfElement.on);
-
   try {
+    loaderDisplay(loaderUpEl, statusOfElement.on);
     const {
-      data: { hits },
+      data: { hits, totalHits },
     } = await getPicture(query, page);
-
+    countPage = Math.ceil(totalHits / per_page);
     if (hits.length > 0) {
-      hasMorePictures(hits);
-      loaderDisplayStatus(statusOfElement.on);
       gallery.innerHTML = renderPictures(hits);
       galleryImg.refresh();
-      loaderDisplayStatus(statusOfElement.off);
       const firstImageEl = document.querySelector('.gallery-item:first-child');
       top = firstImageEl.getBoundingClientRect().top;
     } else {
@@ -84,13 +83,15 @@ async function onSubmit(e) {
         message:
           'Sorry, there are no images matching your search query. Please try again!',
       });
-      loaderDisplayStatus(statusOfElement.off);
+      loaderDisplay(loaderUpEl, statusOfElement.off);
       displayButtonLoadMore(statusOfElement.off);
       return;
     }
+    hasMorePictures(countPage);
   } catch (error) {
     console.log(error);
   } finally {
+    loaderDisplay(loaderUpEl, statusOfElement.off);
     formEl.reset();
   }
 }
@@ -98,20 +99,22 @@ async function onSubmit(e) {
 async function loadMore(e) {
   e.preventDefault();
   page += 1;
-  loaderDisplayStatus(statusOfElement.on);
+  loaderDisplay(loaderDownEl, statusOfElement.on);
 
   try {
     const {
-      data: { hits },
+      data: { hits, totalHits },
     } = await getPicture(query, page);
+    countPage = Math.ceil(totalHits / per_page);
     gallery.insertAdjacentHTML('beforeend', renderPictures(hits));
     galleryImg.refresh();
-    loaderDisplayStatus(statusOfElement.off);
+    loaderDisplay(loaderDownEl, statusOfElement.off);
     window.scrollBy({
       top: top * 4,
       behavior: 'smooth',
     });
-    hasMorePictures(hits);
+
+    hasMorePictures(countPage);
   } catch (error) {
     console.log(error);
   }
@@ -153,17 +156,17 @@ function displayButtonLoadMore(status) {
   }
 }
 
-function loaderDisplayStatus(status) {
+function loaderDisplay(element, status) {
   if (status === statusOfElement.on) {
-    loaderEl.style.display = 'block';
+    element.style.display = 'block';
   }
   if (status === statusOfElement.off) {
-    loaderEl.style.display = 'none';
+    element.style.display = 'none';
   }
 }
 
-function hasMorePictures(arrImages) {
-  if (arrImages.length < per_page) {
+function hasMorePictures(countPage) {
+  if (countPage === page) {
     displayButtonLoadMore(statusOfElement.off);
     iziToast.info({
       position: 'topRight',
