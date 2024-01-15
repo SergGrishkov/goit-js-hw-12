@@ -103,9 +103,8 @@ async function loadMore(e) {
 
   try {
     const {
-      data: { hits, totalHits },
+      data: { hits },
     } = await getPicture(query, page);
-    countPage = Math.ceil(totalHits / per_page);
     gallery.insertAdjacentHTML('beforeend', renderPictures(hits));
     galleryImg.refresh();
     loaderDisplay(loaderDownEl, statusOfElement.off);
